@@ -1,0 +1,38 @@
+loadkeys hu
+cfdisk
+mkfs.vfat /dev/sda1
+mkswap /dev/sda2
+swapon /dev/sda2
+mkfs.ext4 /dev/sda3
+mount /dev/sda3 /mnt
+mkdir /mnt/boot
+mount /dev/sda1 /mnt/boot
+basestrap /mnt base base-devel openrc linux linux-firmware intel-ucode networkmanager networkmanager-openrc neovim
+fstabgen -U /mnt >> /mnt/etc/fstab
+artools-chroot /mnt
+ln -sf /usr/share/zoneinfo/Europe/Bucharest /etc/localtime
+hwclock --systohc
+nvim /etc/locale.gen
+locale-gen
+echo "LANG=en_US.UTF-8" > /etc/locale.conf
+echo "artix" > /etc/hostname
+nvim /etc/conf.d/keymaps
+nvim /etc/hosts
+127.0.0.1   localhost
+::1         localhost
+127.0.1.1   artix.localdomain   artix
+passwd
+useradd -mG wheel,users,audio,video,optical,storage,power,rfkill roli
+passwd roli
+EDITOR=nvim visudo
+rc-update add NetworkManager default
+pacman -S grub efibootmgr
+mkdir /boot/efi
+mount /dev/sdx1 /boot/efi
+grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
+grub-mkconfig -o /boot/grub/grub.cfg
+mkdir /boot/efi/EFI/BOOT
+cp /boot/efi/EFI/GRUB/grubx64.efi /boot/efi/EFI/BOOT/BOOTX64.EFI
+nvim /boot/efi/startup.nsh # Write: bcf boot add 1 fs0:\EFI\GRUB\grubx64.efi "GRUB" *NEWLINE* exit
+exit
+reboot
